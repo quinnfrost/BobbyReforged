@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 public class MixinConfigPlugin implements IMixinConfigPlugin {
-    private boolean hasSodium() { return LoadingModList.get().getModFileById("sodium") != null; }
+    private boolean hasSodium() { return LoadingModList.get().getModFileById("rubidium") != null; }
     private boolean hasStarlight() { return LoadingModList.get().getModFileById("starlight") != null; }
 
     @Override
