@@ -2,7 +2,6 @@ package de.johni0702.minecraft.bobby;
 
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
-import de.johni0702.minecraft.bobby.ext.LightingProviderExt;
 import de.johni0702.minecraft.bobby.mixin.BiomeAccessAccessor;
 import de.johni0702.minecraft.bobby.mixin.ClientWorldAccessor;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -20,12 +19,12 @@ import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkStatus;
@@ -90,7 +89,7 @@ public class FakeChunkManager {
         Path storagePath = client.runDirectory
                 .toPath()
                 .resolve(".bobby")
-                .resolve(getCurrentWorldOrServerName(((ClientWorldAccessor) world).getNetworkHandler()))
+                .resolve(getCurrentWorldOrServerName())
                 .resolve(seedHash + "")
                 .resolve(worldId.getNamespace())
                 .resolve(worldId.getPath());
@@ -305,11 +304,11 @@ public class FakeChunkManager {
             chunk.clear();
 
             LightingProvider lightingProvider = clientChunkManager.getLightingProvider();
-            LightingProviderExt lightingProviderExt = LightingProviderExt.get(lightingProvider);
+//            LightingProviderExt lightingProviderExt = LightingProviderExt.get(lightingProvider);
             ChunkLightProviderExt blockLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.BLOCK));
             ChunkLightProviderExt skyLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.SKY));
 
-            lightingProviderExt.bobby_disableColumn(chunkPos);
+//            lightingProviderExt.bobby_disableColumn(chunkPos);
 
             for (int i = 0; i < chunk.getSectionArray().length; i++) {
                 int y = world.sectionIndexToCoord(i);
@@ -345,7 +344,7 @@ public class FakeChunkManager {
         return copy.getRight();
     }
 
-    private static String getCurrentWorldOrServerName(ClientPlayNetworkHandler networkHandler) {
+    private static String getCurrentWorldOrServerName() {
         IntegratedServer integratedServer = client.getServer();
         if (integratedServer != null) {
             return integratedServer.getSaveProperties().getLevelName();
@@ -356,7 +355,7 @@ public class FakeChunkManager {
             return "realms";
         }
 
-        ServerInfo serverInfo = networkHandler.getServerInfo();
+        ServerInfo serverInfo = client.getCurrentServerEntry();
         if (serverInfo != null) {
             return serverInfo.address.replace(':', '_');
         }

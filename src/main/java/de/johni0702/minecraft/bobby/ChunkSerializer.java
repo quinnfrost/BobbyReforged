@@ -2,7 +2,6 @@ package de.johni0702.minecraft.bobby;
 
 import com.mojang.serialization.Codec;
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
-import de.johni0702.minecraft.bobby.ext.LightingProviderExt;
 import net.minecraft.SharedConstants;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -12,12 +11,12 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtLongArray;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryEntry;
+import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
@@ -63,7 +62,7 @@ public class ChunkSerializer {
     );
 
     public static NbtCompound serialize(WorldChunk chunk, LightingProvider lightingProvider) {
-        Registry<Biome> biomeRegistry = chunk.getWorld().getRegistryManager().get(RegistryKeys.BIOME);
+        Registry<Biome> biomeRegistry = chunk.getWorld().getRegistryManager().get(Registry.BIOME_KEY);
         Codec<ReadableContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createReadableContainerCodec(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.createEntryCodec(),
@@ -155,7 +154,7 @@ public class ChunkSerializer {
             LOGGER.error("Chunk file at {} is in the wrong location; relocating. (Expected {}, got {})", pos, pos, chunkPos);
         }
 
-        Registry<Biome> biomeRegistry = world.getRegistryManager().get(RegistryKeys.BIOME);
+        Registry<Biome> biomeRegistry = world.getRegistryManager().get(Registry.BIOME_KEY);
         Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createPalettedContainerCodec(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.createEntryCodec(),
@@ -208,7 +207,7 @@ public class ChunkSerializer {
                     biomes = new PalettedContainer<>(biomeRegistry.getIndexedEntries(), biomeRegistry.entryOf(BiomeKeys.PLAINS), PalettedContainer.PaletteProvider.BIOME);
                 }
 
-                ChunkSection chunkSection = new ChunkSection(blocks, biomes);
+                ChunkSection chunkSection = new ChunkSection(y, blocks, biomes);
                 chunkSection.calculateCounts();
                 if (!chunkSection.isEmpty()) {
                     chunkSections[yIndex] = chunkSection;
@@ -289,11 +288,11 @@ public class ChunkSerializer {
             boolean hasSkyLight = world.getDimension().hasSkyLight();
             ChunkManager chunkManager = world.getChunkManager();
             LightingProvider lightingProvider = chunkManager.getLightingProvider();
-            LightingProviderExt lightingProviderExt = LightingProviderExt.get(lightingProvider);
+//            LightingProviderExt lightingProviderExt = LightingProviderExt.get(lightingProvider);
             ChunkLightProviderExt blockLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.BLOCK));
             ChunkLightProviderExt skyLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.SKY));
 
-            lightingProviderExt.bobby_enabledColumn(pos.toLong());
+//            lightingProviderExt.bobby_enabledColumn(pos.toLong());
 
             for (int i = -1; i < chunkSections.length + 1; i++) {
                 int y = world.sectionIndexToCoord(i);
@@ -316,6 +315,8 @@ public class ChunkSerializer {
             for (BlockPos blockPos : chunk.getBlockEntityPositions()) {
                 chunk.getBlockEntity(blockPos);
             }
+
+            chunk.setShouldRenderOnUpdate(true);
 
             return chunk;
         };

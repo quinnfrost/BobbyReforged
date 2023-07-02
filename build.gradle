@@ -1,5 +1,5 @@
 plugins {
-	id "dev.architectury.loom" version "0.12.0.290"
+	id 'dev.architectury.loom' version '1.2.+' // or 1.0-SNAPSHOT
 	id "maven-publish"
 }
 
@@ -38,12 +38,6 @@ loom {
 			mod project.mod_id
 		}
 	}
-
-	launches {
-		data {
-			arg "--existing", file("src/main/resources").absolutePath
-		}
-	}
 }
 
 dependencies {
@@ -51,7 +45,7 @@ dependencies {
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	forge "net.minecraftforge:forge:${project.forge_version}"
 
-	modImplementation("curse.maven:rubidium-574856:4573226")
+	modImplementation("curse.maven:rubidium-574856:4568727")
 }
 
 processResources {
