@@ -1,6 +1,7 @@
 package de.johni0702.minecraft.bobby.mixin;
 
 import de.johni0702.minecraft.bobby.Bobby;
+import de.johni0702.minecraft.bobby.BobbyConfig;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.SimpleOption;
 import org.spongepowered.asm.mixin.Final;
@@ -31,7 +32,7 @@ public class GameOptionsMixin {
             index = 1
     )
     private int considerBobbyMaxRenderDistanceSetting(int vanillaSetting) {
-        int bobbySetting = Bobby.getInstance().getConfig().getMaxRenderDistance();
+        int bobbySetting = BobbyConfig.getMaxRenderDistance();
         return Math.max(vanillaSetting, bobbySetting);
     }
 }

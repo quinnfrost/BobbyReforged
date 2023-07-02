@@ -21,10 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
@@ -92,7 +89,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         super.close();
 
         if (lastAccess != null) {
-            int deleteUnusedRegionsAfterDays = Bobby.getInstance().getConfig().getDeleteUnusedRegionsAfterDays();
+            int deleteUnusedRegionsAfterDays = BobbyConfig.getDeleteUnusedRegionsAfterDays();
             if (deleteUnusedRegionsAfterDays >= 0) {
                 for (long entry : lastAccess.pollRegionsOlderThan(deleteUnusedRegionsAfterDays)) {
                     int x = ChunkPos.getPackedX(entry);
@@ -200,17 +197,65 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         progress.accept(done.get(), total.get());
     }
 
-    private record RegionPos(int x, int z) {
-        public Stream<ChunkPos> getContainedChunks() {
+    private static final class RegionPos
+    {
+        private final int x;
+        private final int z;
+
+        private RegionPos(int x, int z)
+        {
+            this.x = x;
+            this.z = z;
+        }
+
+        public Stream<ChunkPos> getContainedChunks()
+        {
             int baseX = x << 5;
             int baseZ = z << 5;
             ChunkPos[] result = new ChunkPos[32 * 32];
-            for (int x = 0; x < 32; x++) {
-                for (int z = 0; z < 32; z++) {
+            for (int x = 0; x < 32; x++)
+            {
+                for (int z = 0; z < 32; z++)
+                {
                     result[x * 32 + z] = new ChunkPos(baseX + x, baseZ + z);
                 }
             }
             return Stream.of(result);
         }
+
+        public int x()
+        {
+            return x;
+        }
+
+        public int z()
+        {
+            return z;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (obj == this) return true;
+            if (obj == null || obj.getClass() != this.getClass()) return false;
+            var that = (RegionPos) obj;
+            return this.x == that.x &&
+                    this.z == that.z;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(x, z);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "RegionPos[" +
+                    "x=" + x + ", " +
+                    "z=" + z + ']';
+        }
+
     }
 }

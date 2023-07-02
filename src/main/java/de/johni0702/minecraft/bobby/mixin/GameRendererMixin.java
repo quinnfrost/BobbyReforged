@@ -2,7 +2,6 @@ package de.johni0702.minecraft.bobby.mixin;
 
 import de.johni0702.minecraft.bobby.FakeChunkManager;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
-import de.johni0702.minecraft.bobby.util.FlawlessFrames;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.world.ClientWorld;
@@ -22,10 +21,9 @@ public abstract class GameRendererMixin {
 
     @Inject(method = "renderWorld", at = @At("HEAD"))
     private void blockingBobbyUpdate(CallbackInfo ci) {
-        if (!FlawlessFrames.isActive()) {
-            return;
-        }
-
+//        if (!FlawlessFrames.isActive()) {
+//            return;
+//        }
         ClientWorld world = this.client.world;
         if (world == null) {
             return;

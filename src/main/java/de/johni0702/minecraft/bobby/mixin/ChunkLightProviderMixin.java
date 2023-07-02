@@ -13,10 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(value = ChunkLightProvider.class, targets = {
-        "ca.spottedleaf.starlight.common.light.StarLightInterface$1",
-        "ca.spottedleaf.starlight.common.light.StarLightInterface$2"
-})
+@Mixin(value = ChunkLightProvider.class)
 public abstract class ChunkLightProviderMixin implements ChunkLightProviderExt {
     private final Long2ObjectMap<ChunkNibbleArray> bobbySectionData = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap<>());
     private final Long2ObjectMap<ChunkNibbleArray> bobbyOriginalSectionData = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap<>());

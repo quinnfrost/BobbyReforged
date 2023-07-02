@@ -150,8 +150,6 @@ public class ChunkSerializer {
     //       by moving them into the returned supplier which is executed on the main thread.
     //       For performance reasons though: The more stuff we can do async, the better.
     public static @Nullable Supplier<WorldChunk> deserialize(ChunkPos pos, NbtCompound level, World world) {
-        BobbyConfig config = Bobby.getInstance().getConfig();
-
         ChunkPos chunkPos = new ChunkPos(level.getInt("xPos"), level.getInt("zPos"));
         if (!Objects.equals(pos, chunkPos)) {
             LOGGER.error("Chunk file at {} is in the wrong location; relocating. (Expected {}, got {})", pos, pos, chunkPos);
@@ -268,21 +266,20 @@ public class ChunkSerializer {
 
         Heightmap.populateHeightmaps(chunk, missingHightmapTypes);
 
-        if (!config.isNoBlockEntities()) {
+        if (!BobbyConfig.isNoBlockEntities()) {
             NbtList blockEntitiesTag = level.getList("block_entities", NbtElement.COMPOUND_TYPE);
             for (int i = 0; i < blockEntitiesTag.size(); i++) {
                 chunk.addPendingBlockEntityNbt(blockEntitiesTag.getCompound(i));
             }
         }
 
-        return loadChunk(chunk, blockLight, skyLight, config);
+        return loadChunk(chunk, blockLight, skyLight);
     }
 
     private static Supplier<WorldChunk> loadChunk(
             FakeChunk chunk,
             ChunkNibbleArray[] blockLight,
-            ChunkNibbleArray[] skyLight,
-            BobbyConfig config
+            ChunkNibbleArray[] skyLight
     ) {
         return () -> {
             ChunkPos pos = chunk.getPos();
@@ -308,7 +305,7 @@ public class ChunkSerializer {
                 }
             }
 
-            chunk.setTainted(config.isTaintFakeChunks());
+            chunk.setTainted(BobbyConfig.isTaintFakeChunks());
 
             // MC lazily loads block entities when they are first accessed.
             // It does so in a thread-unsafe way though, so if they are first accessed from e.g. a render thread, this
@@ -329,8 +326,6 @@ public class ChunkSerializer {
     // It also returns a fake chunk immediately that isn't loaded into the game (yet) but can safely
     // be serialized on another thread.
     public static Pair<WorldChunk, Supplier<WorldChunk>> shallowCopy(WorldChunk original) {
-        BobbyConfig config = Bobby.getInstance().getConfig();
-
         World world = original.getWorld();
         ChunkPos chunkPos = original.getPos();
 
@@ -357,14 +352,14 @@ public class ChunkSerializer {
             NbtCompound blockEntityTag = original.getPackedBlockEntityNbt(pos);
             if (blockEntityTag != null) {
                 blockEntitiesTag.add(blockEntityTag);
-                if (!config.isNoBlockEntities()) {
+                if (!BobbyConfig.isNoBlockEntities()) {
                     fake.addPendingBlockEntityNbt(blockEntityTag);
                 }
             }
         }
         fake.serializedBlockEntities = blockEntitiesTag;
 
-        return Pair.of(fake, loadChunk(fake, blockLight, skyLight, config));
+        return Pair.of(fake, loadChunk(fake, blockLight, skyLight));
     }
 
     private static ChunkNibbleArray floodSkylightFromAbove(ChunkNibbleArray above) {

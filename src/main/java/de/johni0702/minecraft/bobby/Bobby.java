@@ -1,29 +1,17 @@
 package de.johni0702.minecraft.bobby;
 
-import ca.stellardrift.confabricate.Confabricate;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
-import de.johni0702.minecraft.bobby.commands.UpgradeCommand;
-import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import de.johni0702.minecraft.bobby.mixin.SimpleOptionAccessor;
 import de.johni0702.minecraft.bobby.mixin.ValidatingIntSliderCallbacksAccessor;
-import de.johni0702.minecraft.bobby.util.FlawlessFrames;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.option.SimpleOption;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Util;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.spongepowered.configurate.CommentedConfigurationNode;
-import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
-import org.spongepowered.configurate.reference.ConfigurationReference;
-import org.spongepowered.configurate.reference.ValueReference;
-import org.spongepowered.configurate.reference.WatchServiceListener;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,72 +20,42 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
-public class Bobby implements ClientModInitializer {
+@Mod("bobby")
+public class Bobby{
     private static final Logger LOGGER = LogManager.getLogger();
 
     public static final String MOD_ID = "bobby";
-    { instance = this; }
+
     private static Bobby instance;
     public static Bobby getInstance() {
         return instance;
     }
 
-    private static final MinecraftClient client = MinecraftClient.getInstance();
+    public Bobby() {
+        instance = this;
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> this::onInitializeClient);
+    }
 
-    private ValueReference<BobbyConfig, CommentedConfigurationNode> configReference;
-
-    @Override
     public void onInitializeClient() {
-        try {
-            Path configPath = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".conf");
-            @SuppressWarnings("resource") // we'll keep this around for the entire lifetime of our mod
-            ConfigurationReference<CommentedConfigurationNode> rootRef = getOrCreateWatchServiceListener()
-                    .listenToConfiguration(path -> HoconConfigurationLoader.builder().path(path).build(), configPath);
-            configReference = rootRef.referenceTo(BobbyConfig.class);
-            rootRef.saveAsync();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Bobby.MaxRenderDistanceConfigHandler.init();
 
-        ClientCommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess) ->
-                dispatcher.register(literal("bobby")
-                        .then(literal("upgrade").executes(new UpgradeCommand())))));
-
-        FlawlessFrames.onClientInitialization();
-
-        configReference.subscribe(new TaintChunksConfigHandler()::update);
-        configReference.subscribe(new MaxRenderDistanceConfigHandler()::update);
-
-        Util.getIoWorkerExecutor().submit(this::cleanupOldWorlds);
+        Util.getIoWorkerExecutor().submit(Bobby::cleanupOldWorlds);
     }
 
-    public BobbyConfig getConfig() {
-        return configReference != null ? configReference.get() : BobbyConfig.DEFAULT;
-    }
 
     public boolean isEnabled() {
-        BobbyConfig config = getConfig();
-        return config.isEnabled()
-                // For singleplayer, disable ourselves unless the view-distance overwrite is active.
-                && (client.getServer() == null || config.getViewDistanceOverwrite() != 0);
+        return BobbyConfig.isEnabled() && (MinecraftClient.getInstance().getServer() == null || BobbyConfig.getViewDistanceOverwrite() != 0);
     }
 
-    public Screen createConfigScreen(Screen parent) {
-        if (FabricLoader.getInstance().isModLoaded("cloth-config2")) {
-            return BobbyConfigScreenFactory.createConfigScreen(parent, getConfig(), configReference::setAndSaveAsync);
-        }
-        return null;
-    }
 
-    private void cleanupOldWorlds() {
-        int deleteUnusedRegionsAfterDays = Bobby.getInstance().getConfig().getDeleteUnusedRegionsAfterDays();
+    static void cleanupOldWorlds() {
+        int deleteUnusedRegionsAfterDays = BobbyConfig.getDeleteUnusedRegionsAfterDays();
         if (deleteUnusedRegionsAfterDays < 0) {
             return;
         }
 
-        Path basePath = client.runDirectory.toPath().resolve(".bobby");
+        Path basePath = MinecraftClient.getInstance().runDirectory.toPath().resolve(".bobby");
 
         List<Path> toBeDeleted;
         try (Stream<Path> stream = Files.walk(basePath, 4)) {
@@ -143,80 +101,22 @@ public class Bobby implements ClientModInitializer {
         deleteParentsIfEmpty(parent);
     }
 
-    private static WatchServiceListener getOrCreateWatchServiceListener() throws IOException {
-        try {
-            return Confabricate.fileWatcher();
-        } catch (NoClassDefFoundError | NoSuchMethodError ignored) {
-            return createWatchServiceListener();
-        }
-    }
+    static class MaxRenderDistanceConfigHandler {
+        private static int oldMaxRenderDistance = 0;
 
-    private static WatchServiceListener createWatchServiceListener() throws IOException {
-        WatchServiceListener listener = WatchServiceListener.create();
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                listener.close();
-            } catch (IOException e) {
-                LOGGER.catching(e);
-            }
-        }, "Configurate shutdown thread (Bobby)"));
-
-        return listener;
-    }
-
-    private class TaintChunksConfigHandler {
-        private boolean wasEnabled = getConfig().isTaintFakeChunks();
-
-        public void update(BobbyConfig config) {
-            client.submit(() -> setEnabled(config.isTaintFakeChunks()));
-        }
-
-        private void setEnabled(boolean enabled) {
-            if (wasEnabled == enabled) {
-                return;
-            }
-            wasEnabled = enabled;
-
-            ClientWorld world = client.world;
-            if (world == null) {
-                return;
-            }
-
-            FakeChunkManager bobbyChunkManager = ((ClientChunkManagerExt) world.getChunkManager()).bobby_getFakeChunkManager();
-            if (bobbyChunkManager == null) {
-                return;
-            }
-
-            for (WorldChunk fakeChunk : bobbyChunkManager.getFakeChunks()) {
-                ((FakeChunk) fakeChunk).setTainted(enabled);
-            }
-        }
-    }
-
-    private class MaxRenderDistanceConfigHandler {
-        private int oldMaxRenderDistance = 0;
-
+        public static void init()
         {
-            update(getConfig(), true);
-        }
-
-        public void update(BobbyConfig config) {
-            update(config, false);
-        }
-
-        public void update(BobbyConfig config, boolean increaseOnly) {
-            client.submit(() -> setMaxRenderDistance(config.getMaxRenderDistance(), increaseOnly));
+            MinecraftClient.getInstance().submit(() -> Bobby.MaxRenderDistanceConfigHandler.setMaxRenderDistance(BobbyConfig.getMaxRenderDistance(), true));
         }
 
         @SuppressWarnings({"ConstantConditions", "unchecked"})
-        private void setMaxRenderDistance(int newMaxRenderDistance, boolean increaseOnly) {
+        private static void setMaxRenderDistance(int newMaxRenderDistance, boolean increaseOnly) {
             if (oldMaxRenderDistance == newMaxRenderDistance) {
                 return;
             }
             oldMaxRenderDistance = newMaxRenderDistance;
 
-            SimpleOption<Integer> viewDistance = client.options.getViewDistance();
+            SimpleOption<Integer> viewDistance = MinecraftClient.getInstance().options.getViewDistance();
             if (viewDistance.getCallbacks() instanceof SimpleOption.ValidatingIntSliderCallbacks callbacks) {
                 ValidatingIntSliderCallbacksAccessor callbacksAcc = (ValidatingIntSliderCallbacksAccessor)(Object) callbacks;
                 if (increaseOnly) {

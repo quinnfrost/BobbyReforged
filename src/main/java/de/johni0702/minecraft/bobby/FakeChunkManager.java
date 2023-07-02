@@ -142,7 +142,6 @@ public class FakeChunkManager {
             return;
         }
 
-        BobbyConfig config = Bobby.getInstance().getConfig();
         long time = Util.getMeasuringTimeMs();
 
         List<LoadingJob> newJobs = new ArrayList<>();
@@ -184,7 +183,7 @@ public class FakeChunkManager {
         }
 
         // Anything remaining in the set is no longer needed and can now be unloaded
-        long unloadTime = time - config.getUnloadDelaySecs() * 1000L;
+        long unloadTime = time - BobbyConfig.getUnloadDelaySecs() * 1000L;
         int countSinceLastThrottleCheck = 0;
         while (true) {
             Pair<Long, Long> next = unloadQueue.pollFirst();
