@@ -46,6 +46,7 @@ dependencies {
 	forge "net.minecraftforge:forge:${project.forge_version}"
 
 	modImplementation("curse.maven:rubidium-574856:4568727")
+    modImplementation("curse.maven:starlight-forge-526854:3836016")
 }
 
 processResources {
