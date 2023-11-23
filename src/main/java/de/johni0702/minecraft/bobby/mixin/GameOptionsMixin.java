@@ -2,39 +2,34 @@ package de.johni0702.minecraft.bobby.mixin;
 
 import de.johni0702.minecraft.bobby.Bobby;
 import de.johni0702.minecraft.bobby.BobbyConfig;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
-import net.minecraft.client.option.SimpleOption;
+import net.minecraft.client.option.Option;
 import net.minecraftforge.common.ForgeConfig;
 import net.minecraftforge.fml.loading.FMLConfig;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.Slice;
+import org.spongepowered.asm.mixin.injection.*;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.io.File;
 
 @Mixin(GameOptions.class)
 public class GameOptionsMixin {
     @Shadow
-    private @Final SimpleOption<Integer> viewDistance;
+    private @Final int viewDistance;
 
-    @Inject(method = "getClampedViewDistance", at = @At("HEAD"), cancellable = true)
-    private void forceClientDistanceWhenBobbyIsActive(CallbackInfoReturnable<Integer> ci) {
-        if (Bobby.getInstance().isEnabled()) {
-            ci.setReturnValue(this.viewDistance.getValue());
+    @Inject(
+            method = "<init>",
+            at = @At(value = "RETURN")
+    )
+    private void $GameOptions(MinecraftClient client, File optionsFile, CallbackInfo ci) {
+        if (client.is64Bit() && Runtime.getRuntime().maxMemory() >= 1000000000L) {
+            Option.RENDER_DISTANCE.setMax(BobbyConfig.getMaxRenderDistance());
+            Option.SIMULATION_DISTANCE.setMax(BobbyConfig.getMaxRenderDistance());
         }
     }
 
-    @ModifyArg(
-            method = "<init>",
-            slice = @Slice(from = @At(value = "CONSTANT", args = "stringValue=options.renderDistance")),
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/SimpleOption$ValidatingIntSliderCallbacks;<init>(II)V", ordinal = 0),
-            index = 1
-    )
-    private int considerBobbyMaxRenderDistanceSetting(int vanillaSetting) {
-        int bobbySetting = BobbyConfig.getMaxRenderDistance();
-        return Math.max(vanillaSetting, bobbySetting);
-    }
 }

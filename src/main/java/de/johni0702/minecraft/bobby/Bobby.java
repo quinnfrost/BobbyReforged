@@ -2,15 +2,11 @@ package de.johni0702.minecraft.bobby;
 
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
-import de.johni0702.minecraft.bobby.mixin.SimpleOptionAccessor;
-import de.johni0702.minecraft.bobby.mixin.ValidatingIntSliderCallbacksAccessor;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.SimpleOption;
 import net.minecraft.util.Util;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -117,17 +113,17 @@ public class Bobby{
             }
             oldMaxRenderDistance = newMaxRenderDistance;
 
-            SimpleOption<Integer> viewDistance = MinecraftClient.getInstance().options.getViewDistance();
-            if (viewDistance.getCallbacks() instanceof SimpleOption.ValidatingIntSliderCallbacks callbacks) {
-                ValidatingIntSliderCallbacksAccessor callbacksAcc = (ValidatingIntSliderCallbacksAccessor)(Object) callbacks;
-                if (increaseOnly) {
-                    callbacksAcc.setMaxInclusive(Math.max(callbacks.maxInclusive(), newMaxRenderDistance));
-                } else {
-                    callbacksAcc.setMaxInclusive(newMaxRenderDistance);
-                }
-                SimpleOptionAccessor<Integer> optionAccessor = (SimpleOptionAccessor<Integer>)(Object) viewDistance;
-                optionAccessor.setCodec(callbacks.codec());
-            }
+//            SimpleOption<Integer> viewDistance = MinecraftClient.getInstance().options.getViewDistance();
+//            if (viewDistance.getCallbacks() instanceof SimpleOption.ValidatingIntSliderCallbacks callbacks) {
+//                ValidatingIntSliderCallbacksAccessor callbacksAcc = (ValidatingIntSliderCallbacksAccessor)(Object) callbacks;
+//                if (increaseOnly) {
+//                    callbacksAcc.setMaxInclusive(Math.max(callbacks.maxInclusive(), newMaxRenderDistance));
+//                } else {
+//                    callbacksAcc.setMaxInclusive(newMaxRenderDistance);
+//                }
+//                SimpleOptionAccessor<Integer> optionAccessor = (SimpleOptionAccessor<Integer>)(Object) viewDistance;
+//                optionAccessor.setCodec(callbacks.codec());
+//            }
         }
     }
 }

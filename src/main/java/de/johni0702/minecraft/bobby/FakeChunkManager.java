@@ -124,7 +124,7 @@ public class FakeChunkManager {
     }
 
     public void update(boolean blocking, BooleanSupplier shouldKeepTicking) {
-        update(blocking, shouldKeepTicking, client.options.getViewDistance().getValue());
+        update(blocking, shouldKeepTicking, client.options.viewDistance);
     }
 
     private void update(boolean blocking, BooleanSupplier shouldKeepTicking, int newViewDistance) {

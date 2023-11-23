@@ -26,7 +26,6 @@ import net.minecraft.world.chunk.ChunkManager;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.PalettedContainer;
-import net.minecraft.world.chunk.ReadableContainer;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
 import org.apache.commons.lang3.tuple.Pair;
@@ -54,7 +53,7 @@ public class ChunkSerializer {
             }
         }
     }
-    private static final Codec<PalettedContainer<BlockState>> BLOCK_CODEC = PalettedContainer.createPalettedContainerCodec(
+    private static final Codec<PalettedContainer<BlockState>> BLOCK_CODEC = PalettedContainer.createCodec(
             Block.STATE_IDS,
             BlockState.CODEC,
             PalettedContainer.PaletteProvider.BLOCK_STATE,
@@ -63,7 +62,7 @@ public class ChunkSerializer {
 
     public static NbtCompound serialize(WorldChunk chunk, LightingProvider lightingProvider) {
         Registry<Biome> biomeRegistry = chunk.getWorld().getRegistryManager().get(Registry.BIOME_KEY);
-        Codec<ReadableContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createReadableContainerCodec(
+        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createCodec(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.createEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,
@@ -155,7 +154,7 @@ public class ChunkSerializer {
         }
 
         Registry<Biome> biomeRegistry = world.getRegistryManager().get(Registry.BIOME_KEY);
-        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createPalettedContainerCodec(
+        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createCodec(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.createEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,

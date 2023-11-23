@@ -110,7 +110,11 @@ public class FakeChunkStorage extends VersionedChunkStorage {
     }
 
     public CompletableFuture<Optional<NbtCompound>> loadTag(ChunkPos pos) {
-        return getNbt(pos).thenApply(maybeNbt -> maybeNbt.map(nbt -> loadTag(pos, nbt)));
+        try {
+            return CompletableFuture.completedFuture(Optional.of(getNbt(pos))).thenApply(maybeNbt -> maybeNbt.map(nbt -> loadTag(pos, nbt)));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private NbtCompound loadTag(ChunkPos pos, NbtCompound nbt) {
@@ -121,7 +125,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             if (sentUpgradeNotification.compareAndSet(false, true)) {
                 MinecraftClient client = MinecraftClient.getInstance();
                 client.submit(() -> {
-                    Text text = Text.translatable(writeable ? "bobby.upgrade.required" : "bobby.upgrade.fallback_world");
+                    Text text = Text.of(writeable ? "bobby.upgrade.required" : "bobby.upgrade.fallback_world");
                     client.submit(() -> client.inGameHud.getChatHud().addMessage(text));
                 });
             }
@@ -161,8 +165,8 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                 workExecutor.submit(() -> {
                     NbtCompound nbt;
                     try {
-                        nbt = io.readChunkData(chunkPos).join().orElse(null);
-                    } catch (CompletionException e) {
+                        nbt = CompletableFuture.completedFuture(io.getNbt(chunkPos)).join();
+                    } catch (CompletionException | IOException e) {
                         LOGGER.warn("Error reading chunk " + chunkPos.x + "/" + chunkPos.z + ":", e);
                         nbt = null;
                     }

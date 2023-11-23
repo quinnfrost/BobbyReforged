@@ -37,7 +37,7 @@ public class FakeChunk extends WorldChunk {
         isTainted = enabled;
 
         MinecraftClient client = MinecraftClient.getInstance();
-        double gamma = client.options.getGamma().getValue();
+        double gamma = client.options.gamma;
         WorldRenderer worldRenderer = client.worldRenderer;
 
         LightingProvider lightingProvider = getWorld().getLightingProvider();
