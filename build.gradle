@@ -10,6 +10,7 @@ repositories {
 }
 
 sourceCompatibility = targetCompatibility = JavaVersion.VERSION_17
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 archivesBaseName = project.archives_base_name
 version = "${minecraft_version}_v${mod_version}"
@@ -75,6 +76,7 @@ jar {
 	}
 }
 
+// note: publish does not work (not remapping?), use ./gradlew build
 // configure the maven publication
 publishing {
 	tasks.publish.dependsOn 'build'
